@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchInstagramStats } from '@/lib/socialblade'
+import { fetchInstagramProfile } from '@/lib/apify'
 import { createServerClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
+// Apify runs can take up to ~60s — extend the default timeout
+export const maxDuration = 120
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
@@ -10,99 +12,56 @@ export async function GET(req: NextRequest) {
   const workspaceId = searchParams.get('workspace_id')
 
   if (!username) {
-    return NextResponse.json({ error: 'username is required' }, { status: 400 })
+    return NextResponse.json({ error: 'username é obrigatório' }, { status: 400 })
   }
 
-  let stats
+  let profile
   try {
-    stats = await fetchInstagramStats(username)
+    profile = await fetchInstagramProfile(username)
   } catch (err) {
-    const message = err instanceof Error ? err.message : `Failed to fetch stats for @${username}`
+    const message = err instanceof Error ? err.message : `Falha ao buscar dados de @${username}`
+    console.error('[social-metrics]', message)
     return NextResponse.json({ error: message }, { status: 502 })
   }
 
-  if (!stats) {
-    return NextResponse.json(
-      { error: `Não foi possível buscar dados para @${username}. Tente novamente.` },
-      { status: 502 }
-    )
-  }
-
-  // Save to Supabase metrics table if workspace_id is provided
+  // Save snapshot to Supabase if workspace_id provided
   if (workspaceId) {
     const sb = createServerClient()
     const now = new Date().toISOString()
 
-    const upserts = [
-      {
-        workspace_id: workspaceId,
-        metric_name: 'followers',
-        metric_value: stats.followers,
-        metric_unit: null,
-        dimension: 'instagram',
-        recorded_at: now,
-      },
-      {
-        workspace_id: workspaceId,
-        metric_name: 'following',
-        metric_value: stats.following,
-        metric_unit: null,
-        dimension: 'instagram',
-        recorded_at: now,
-      },
-      {
-        workspace_id: workspaceId,
-        metric_name: 'posts',
-        metric_value: stats.posts,
-        metric_unit: null,
-        dimension: 'instagram',
-        recorded_at: now,
-      },
-      {
-        workspace_id: workspaceId,
-        metric_name: 'growth_rate_weekly',
-        metric_value: stats.growth_rate_weekly,
-        metric_unit: '%',
-        dimension: 'instagram',
-        recorded_at: now,
-      },
+    const rows: Array<{
+      workspace_id: string
+      metric_name: string
+      metric_value: number
+      metric_unit: string | null
+      dimension: string
+      recorded_at: string
+    }> = [
+      { workspace_id: workspaceId, metric_name: 'followers', metric_value: profile.followers, metric_unit: null, dimension: 'instagram', recorded_at: now },
+      { workspace_id: workspaceId, metric_name: 'following', metric_value: profile.following, metric_unit: null, dimension: 'instagram', recorded_at: now },
+      { workspace_id: workspaceId, metric_name: 'posts', metric_value: profile.posts, metric_unit: null, dimension: 'instagram', recorded_at: now },
     ]
 
-    // Insert new metric rows (each refresh creates a new snapshot)
-    const { error } = await sb.from('metrics').insert(upserts)
-    if (error) {
-      console.error('[social-metrics] Failed to save metrics:', error.message)
+    if (profile.engagement_rate !== null) {
+      rows.push({ workspace_id: workspaceId, metric_name: 'engagement_rate', metric_value: profile.engagement_rate, metric_unit: '%', dimension: 'instagram', recorded_at: now })
     }
 
-    // Save daily history entries (last 30 days)
-    if (stats.daily_history.length > 0) {
-      const historyRows = stats.daily_history.slice(-30).map((entry) => ({
-        workspace_id: workspaceId,
-        metric_name: 'followers_daily',
-        metric_value: entry.followers,
-        metric_unit: null,
-        dimension: 'instagram',
-        recorded_at: new Date(entry.date).toISOString(),
-      }))
-
-      // Only insert if we have valid dates
-      const validRows = historyRows.filter((r) => !isNaN(new Date(r.recorded_at).getTime()))
-      if (validRows.length > 0) {
-        const { error: histError } = await sb.from('metrics').insert(validRows)
-        if (histError) {
-          console.error('[social-metrics] Failed to save history:', histError.message)
-        }
-      }
+    const { error } = await sb.from('metrics').insert(rows)
+    if (error) {
+      console.error('[social-metrics] Supabase insert error:', error.message)
     }
   }
 
   return NextResponse.json({
-    username: stats.username,
-    followers: stats.followers,
-    following: stats.following,
-    posts: stats.posts,
-    growth_rate_weekly: stats.growth_rate_weekly,
-    daily_history: stats.daily_history,
-    fetched_at: new Date().toISOString(),
+    username: profile.username,
+    full_name: profile.fullName,
+    biography: profile.biography,
+    followers: profile.followers,
+    following: profile.following,
+    posts: profile.posts,
+    is_verified: profile.isVerified,
+    is_private: profile.isPrivate,
+    engagement_rate: profile.engagement_rate,
+    fetched_at: profile.fetched_at,
   })
 }

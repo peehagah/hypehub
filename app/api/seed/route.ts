@@ -292,6 +292,12 @@ Seja objetivo, use scores de 0-100 e sempre justifique o score.`,
   },
 ]
 
+// Instagram handles to set on workspaces (for Apify integration)
+const workspaceInstagramHandles: Array<{ slug: string; instagram_handle: string }> = [
+  { slug: 'gabriel-cazonato', instagram_handle: 'gabrielcazonatoo' },
+  { slug: 'sellervision', instagram_handle: 'sellervision.ai' },
+]
+
 export async function GET(req: Request) {
   // Basic protection - only allow in development or with secret
   if (process.env.NODE_ENV === 'production') {
@@ -304,6 +310,35 @@ export async function GET(req: Request) {
 
   const supabase = createServerClient()
   const results: { agent: string; status: string; error?: string }[] = []
+
+  // Store instagram_handle inside onboarding_data JSONB (avoids schema migration)
+  for (const { slug, instagram_handle } of workspaceInstagramHandles) {
+    // First fetch current onboarding_data
+    const { data: wsRow } = await supabase
+      .from('workspaces')
+      .select('id, onboarding_data')
+      .eq('slug', slug)
+      .maybeSingle()
+
+    if (!wsRow) {
+      results.push({ agent: `workspace:${slug}`, status: 'skipped', error: 'workspace not found' })
+      continue
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const currentData = (wsRow as any).onboarding_data ?? {}
+    const { error } = await supabase
+      .from('workspaces')
+      .update({ onboarding_data: { ...currentData, instagram_handle } })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq('id', (wsRow as any).id)
+
+    if (error) {
+      results.push({ agent: `workspace:${slug}`, status: 'error', error: error.message })
+    } else {
+      results.push({ agent: `workspace:${slug}`, status: `instagram_handle set to @${instagram_handle}` })
+    }
+  }
 
   for (const agentDef of agentsToSeed) {
     const { workspaceSlug, ...agentData } = agentDef

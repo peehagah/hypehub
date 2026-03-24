@@ -15,7 +15,7 @@ interface MetricCardItem {
 
 export interface ConsolidatedMetrics {
   totalFollowers: number | null
-  followersGrowthWeekly: number | null  // percentage
+  avgEngagementRate: number | null  // average % across workspaces
   totalPosts: number | null
   activeClients: number
 }
@@ -28,7 +28,7 @@ function formatNumber(n: number): string {
 
 function buildMetrics(consolidated?: ConsolidatedMetrics | null, taskCount = 0, pendingCount = 0): MetricCardItem[] {
   const followers = consolidated?.totalFollowers
-  const growth = consolidated?.followersGrowthWeekly
+  const engagement = consolidated?.avgEngagementRate
   const posts = consolidated?.totalPosts
   const activeClients = consolidated?.activeClients ?? 0
 
@@ -36,10 +36,10 @@ function buildMetrics(consolidated?: ConsolidatedMetrics | null, taskCount = 0, 
     {
       label: 'Audiência Total',
       value: followers != null ? formatNumber(followers) : '—',
-      delta: growth != null
-        ? `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}% esta semana`
+      delta: engagement != null
+        ? `${engagement.toFixed(1)}% engajamento médio`
         : 'Instagram',
-      deltaPositive: growth != null ? growth >= 0 : true,
+      deltaPositive: engagement != null ? engagement >= 3 : true,
       icon: <Users size={18} />,
       color: '#ff6b6b',
       glow: 'rgba(255,107,107,0.15)',

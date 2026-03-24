@@ -52,7 +52,7 @@ export default async function DashboardPage() {
       dailySummary={dailySummary}
       consolidatedMetrics={{
         totalFollowers: instagramMetrics.totalFollowers,
-        followersGrowthWeekly: instagramMetrics.followersGrowthWeekly,
+        avgEngagementRate: instagramMetrics.avgEngagementRate,
         totalPosts: instagramMetrics.totalPosts,
         activeClients: workspaces.length,
       }}

@@ -137,7 +137,7 @@ function InstagramMetricsPanel({
   const followers = getLatestMetric(metrics, 'followers')
   const following = getLatestMetric(metrics, 'following')
   const posts = getLatestMetric(metrics, 'posts')
-  const growthRate = getLatestMetric(metrics, 'growth_rate_weekly')
+  const engagementRate = getLatestMetric(metrics, 'engagement_rate')
 
   const hasData = followers !== null
 
@@ -216,14 +216,14 @@ function InstagramMetricsPanel({
             <p className="text-xl font-bold text-white">{posts !== null ? formatNumber(posts) : '—'}</p>
           </div>
           <div className="rounded-lg bg-[#0f1117] border border-[#2a2d3e] p-4">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Crescimento 7d</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Engajamento</p>
             <p
               className={cn(
                 'text-xl font-bold',
-                growthRate === null ? 'text-slate-500' : growthRate >= 0 ? 'text-green-400' : 'text-red-400'
+                engagementRate === null ? 'text-slate-500' : engagementRate >= 3 ? 'text-green-400' : 'text-yellow-400'
               )}
             >
-              {growthRate !== null ? `${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(2)}%` : '—'}
+              {engagementRate !== null ? `${engagementRate.toFixed(2)}%` : '—'}
             </p>
           </div>
         </div>
@@ -331,7 +331,10 @@ export function WorkspaceClient({
             <InstagramMetricsPanel
               metrics={metrics}
               workspaceId={workspace.id}
-              instagramHandle={workspace.instagram_handle}
+              instagramHandle={
+                workspace.instagram_handle ??
+                (workspace.onboarding_data as Record<string, unknown> | null)?.instagram_handle as string | null
+              }
             />
 
             {/* Metrics Grid */}

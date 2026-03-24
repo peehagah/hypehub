@@ -132,7 +132,7 @@ export async function getAllAgents(): Promise<Agent[]> {
 // Returns the most recent Instagram metrics across all workspaces (for the dashboard home)
 export async function getConsolidatedInstagramMetrics(): Promise<{
   totalFollowers: number | null
-  followersGrowthWeekly: number | null
+  avgEngagementRate: number | null
   totalPosts: number | null
 }> {
   const sb = createServerClient()
@@ -140,13 +140,13 @@ export async function getConsolidatedInstagramMetrics(): Promise<{
     .from('metrics')
     .select('workspace_id, metric_name, metric_value, recorded_at')
     .eq('dimension', 'instagram')
-    .in('metric_name', ['followers', 'growth_rate_weekly', 'posts'])
+    .in('metric_name', ['followers', 'engagement_rate', 'posts'])
     .order('recorded_at', { ascending: false })
     .limit(200)
 
   if (error || !data) {
     console.error('[getConsolidatedInstagramMetrics]', error?.message)
-    return { totalFollowers: null, followersGrowthWeekly: null, totalPosts: null }
+    return { totalFollowers: null, avgEngagementRate: null, totalPosts: null }
   }
 
   // For each workspace, take the most recent value of each metric
@@ -160,26 +160,26 @@ export async function getConsolidatedInstagramMetrics(): Promise<{
   }
 
   let totalFollowers: number | null = null
-  let followersGrowthWeekly: number | null = null
+  let avgEngagementRate: number | null = null
   let totalPosts: number | null = null
-  let growthCount = 0
+  let engagementCount = 0
 
   for (const [key, { value }] of Array.from(latestByWorkspaceAndMetric.entries())) {
     const metricName = key.split('::')[1]
     if (metricName === 'followers') {
       totalFollowers = (totalFollowers ?? 0) + value
-    } else if (metricName === 'growth_rate_weekly') {
-      followersGrowthWeekly = (followersGrowthWeekly ?? 0) + value
-      growthCount++
+    } else if (metricName === 'engagement_rate') {
+      avgEngagementRate = (avgEngagementRate ?? 0) + value
+      engagementCount++
     } else if (metricName === 'posts') {
       totalPosts = (totalPosts ?? 0) + value
     }
   }
 
-  // Average growth rate across workspaces
-  if (growthCount > 1 && followersGrowthWeekly !== null) {
-    followersGrowthWeekly = followersGrowthWeekly / growthCount
+  // Average engagement rate across workspaces
+  if (engagementCount > 1 && avgEngagementRate !== null) {
+    avgEngagementRate = avgEngagementRate / engagementCount
   }
 
-  return { totalFollowers, followersGrowthWeekly, totalPosts }
+  return { totalFollowers, avgEngagementRate, totalPosts }
 }
