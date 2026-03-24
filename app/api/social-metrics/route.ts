@@ -7,6 +7,13 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
 export async function GET(req: NextRequest) {
+  // Debug: confirm env var is present server-side
+  const tokenPresent = !!process.env.APIFY_API_TOKEN
+  console.log('[social-metrics] APIFY_API_TOKEN present:', tokenPresent)
+  if (tokenPresent) {
+    console.log('[social-metrics] Token prefix:', process.env.APIFY_API_TOKEN?.slice(0, 12) + '...')
+  }
+
   const { searchParams } = req.nextUrl
   const username = searchParams.get('username')
   const workspaceId = searchParams.get('workspace_id')
