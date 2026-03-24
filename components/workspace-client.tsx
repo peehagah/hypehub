@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   MessageSquare,
@@ -14,6 +15,8 @@ import {
   AlertCircle,
   Circle,
   Loader2,
+  RefreshCw,
+  Instagram,
   type LucideProps,
 } from 'lucide-react'
 import type { ForwardRefExoticComponent, RefAttributes } from 'react'
@@ -49,6 +52,20 @@ interface WorkspaceClientProps {
   agents: Agent[]
   metrics: Metric[]
   activity: ActivityLogEntry[]
+}
+
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  return String(n)
+}
+
+// Extract the latest value for a specific metric from the metrics array
+function getLatestMetric(metrics: Metric[], name: string, dim = 'instagram'): number | null {
+  const found = metrics
+    .filter((m) => m.metric_name === name && m.dimension === dim)
+    .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())[0]
+  return found ? found.metric_value : null
 }
 
 function StatCard({
@@ -103,10 +120,133 @@ function AgentStatusCard({ agent }: { agent: Agent }) {
   )
 }
 
+function InstagramMetricsPanel({
+  metrics,
+  workspaceId,
+  instagramHandle,
+}: {
+  metrics: Metric[]
+  workspaceId: string
+  instagramHandle: string | null | undefined
+}) {
+  const router = useRouter()
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
+
+  const followers = getLatestMetric(metrics, 'followers')
+  const following = getLatestMetric(metrics, 'following')
+  const posts = getLatestMetric(metrics, 'posts')
+  const growthRate = getLatestMetric(metrics, 'growth_rate_weekly')
+
+  const hasData = followers !== null
+
+  const handleRefresh = useCallback(async () => {
+    if (!instagramHandle) return
+    setRefreshing(true)
+    setRefreshError(null)
+    try {
+      const params = new URLSearchParams({ username: instagramHandle, workspace_id: workspaceId })
+      const res = await fetch(`/api/social-metrics?${params}`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error ?? `HTTP ${res.status}`)
+      }
+      setLastRefreshed(new Date())
+      router.refresh()
+    } catch (err) {
+      setRefreshError(err instanceof Error ? err.message : 'Erro ao atualizar')
+    } finally {
+      setRefreshing(false)
+    }
+  }, [instagramHandle, workspaceId, router])
+
+  return (
+    <div className="rounded-xl border border-[#2a2d3e] bg-[#1a1d2e] p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Instagram size={16} className="text-pink-400" />
+        <h3 className="text-sm font-semibold text-white">Instagram</h3>
+        {instagramHandle && (
+          <span className="text-xs text-slate-500">@{instagramHandle}</span>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          {lastRefreshed && (
+            <span className="text-[10px] text-slate-600">
+              Atualizado {lastRefreshed.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          {instagramHandle ? (
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                refreshing
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-pink-500/10 text-pink-400 hover:bg-pink-500/20 border border-pink-500/20'
+              )}
+            >
+              <RefreshCw size={11} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing ? 'Atualizando…' : 'Atualizar métricas'}
+            </button>
+          ) : (
+            <span className="text-[10px] text-slate-600 italic">Configure instagram_handle no workspace</span>
+          )}
+        </div>
+      </div>
+
+      {refreshError && (
+        <div className="mb-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
+          {refreshError}
+        </div>
+      )}
+
+      {hasData ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="rounded-lg bg-[#0f1117] border border-[#2a2d3e] p-4">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Seguidores</p>
+            <p className="text-xl font-bold text-white">{formatNumber(followers!)}</p>
+          </div>
+          <div className="rounded-lg bg-[#0f1117] border border-[#2a2d3e] p-4">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Seguindo</p>
+            <p className="text-xl font-bold text-white">{following !== null ? formatNumber(following) : '—'}</p>
+          </div>
+          <div className="rounded-lg bg-[#0f1117] border border-[#2a2d3e] p-4">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Posts</p>
+            <p className="text-xl font-bold text-white">{posts !== null ? formatNumber(posts) : '—'}</p>
+          </div>
+          <div className="rounded-lg bg-[#0f1117] border border-[#2a2d3e] p-4">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Crescimento 7d</p>
+            <p
+              className={cn(
+                'text-xl font-bold',
+                growthRate === null ? 'text-slate-500' : growthRate >= 0 ? 'text-green-400' : 'text-red-400'
+              )}
+            >
+              {growthRate !== null ? `${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(2)}%` : '—'}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-6 text-slate-600">
+          <Instagram size={32} className="mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Nenhum dado de Instagram disponível</p>
+          {instagramHandle ? (
+            <p className="text-xs mt-1">Clique em &quot;Atualizar métricas&quot; para buscar dados reais</p>
+          ) : (
+            <p className="text-xs mt-1">Configure o instagram_handle no workspace e clique em Atualizar métricas</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function WorkspaceClient({
   workspace,
   tasks,
   agents,
+  metrics = [],
   activity,
 }: Omit<WorkspaceClientProps, 'metrics'> & { metrics?: Metric[] }) {
   const [activeTab, setActiveTab] = useState<Tab>('Visão Geral')
@@ -118,7 +258,6 @@ export function WorkspaceClient({
   const runningAgents = agents.filter((a) => a.status === 'running').length
   const errorAgents = agents.filter((a) => a.status === 'error').length
 
-  // Tasks done this week
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
   const doneThisWeek = doneTasks.filter(
@@ -188,6 +327,13 @@ export function WorkspaceClient({
         {/* Tab: Visão Geral */}
         {activeTab === 'Visão Geral' && (
           <div className="space-y-6 animate-fade-in">
+            {/* Instagram Metrics Panel */}
+            <InstagramMetricsPanel
+              metrics={metrics}
+              workspaceId={workspace.id}
+              instagramHandle={workspace.instagram_handle}
+            />
+
             {/* Metrics Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard

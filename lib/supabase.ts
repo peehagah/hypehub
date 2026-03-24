@@ -128,3 +128,58 @@ export async function getAllAgents(): Promise<Agent[]> {
   if (error) console.error('[getAllAgents]', error.message)
   return (data as Agent[]) ?? []
 }
+
+// Returns the most recent Instagram metrics across all workspaces (for the dashboard home)
+export async function getConsolidatedInstagramMetrics(): Promise<{
+  totalFollowers: number | null
+  followersGrowthWeekly: number | null
+  totalPosts: number | null
+}> {
+  const sb = createServerClient()
+  const { data, error } = await sb
+    .from('metrics')
+    .select('workspace_id, metric_name, metric_value, recorded_at')
+    .eq('dimension', 'instagram')
+    .in('metric_name', ['followers', 'growth_rate_weekly', 'posts'])
+    .order('recorded_at', { ascending: false })
+    .limit(200)
+
+  if (error || !data) {
+    console.error('[getConsolidatedInstagramMetrics]', error?.message)
+    return { totalFollowers: null, followersGrowthWeekly: null, totalPosts: null }
+  }
+
+  // For each workspace, take the most recent value of each metric
+  const latestByWorkspaceAndMetric = new Map<string, { value: number; at: string }>()
+  for (const row of data as Array<{ workspace_id: string; metric_name: string; metric_value: number; recorded_at: string }>) {
+    const key = `${row.workspace_id}::${row.metric_name}`
+    const existing = latestByWorkspaceAndMetric.get(key)
+    if (!existing || row.recorded_at > existing.at) {
+      latestByWorkspaceAndMetric.set(key, { value: row.metric_value, at: row.recorded_at })
+    }
+  }
+
+  let totalFollowers: number | null = null
+  let followersGrowthWeekly: number | null = null
+  let totalPosts: number | null = null
+  let growthCount = 0
+
+  for (const [key, { value }] of Array.from(latestByWorkspaceAndMetric.entries())) {
+    const metricName = key.split('::')[1]
+    if (metricName === 'followers') {
+      totalFollowers = (totalFollowers ?? 0) + value
+    } else if (metricName === 'growth_rate_weekly') {
+      followersGrowthWeekly = (followersGrowthWeekly ?? 0) + value
+      growthCount++
+    } else if (metricName === 'posts') {
+      totalPosts = (totalPosts ?? 0) + value
+    }
+  }
+
+  // Average growth rate across workspaces
+  if (growthCount > 1 && followersGrowthWeekly !== null) {
+    followersGrowthWeekly = followersGrowthWeekly / growthCount
+  }
+
+  return { totalFollowers, followersGrowthWeekly, totalPosts }
+}

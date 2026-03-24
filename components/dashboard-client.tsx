@@ -5,6 +5,7 @@ import { AlertBanner } from '@/components/alert-banner'
 import { DailySummaryCard } from '@/components/daily-summary'
 import { QuickCommandBar, QuickCommandModal } from '@/components/quick-command'
 import { MetricsCards } from '@/components/metrics-cards'
+import type { ConsolidatedMetrics } from '@/components/metrics-cards'
 import { QuickActions } from '@/components/quick-actions'
 import { WorkspaceCard, ProspectCard } from '@/components/workspace-card'
 import { AgentHealth } from '@/components/agent-health'
@@ -22,6 +23,8 @@ interface DashboardClientProps {
   activity: ActivityLogEntry[]
   alerts: Alert[]
   dailySummary: DailySummary | null
+  consolidatedMetrics?: ConsolidatedMetrics | null
+  pendingTaskCount?: number
 }
 
 export function DashboardClient({
@@ -31,6 +34,8 @@ export function DashboardClient({
   activity,
   alerts,
   dailySummary,
+  consolidatedMetrics,
+  pendingTaskCount = 0,
 }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Clientes')
   const [cmdOpen, setCmdOpen] = useState(false)
@@ -79,7 +84,11 @@ export function DashboardClient({
         <QuickCommandBar onOpen={() => setCmdOpen(true)} />
 
         {/* 4. Metrics Cards */}
-        <MetricsCards />
+        <MetricsCards
+          consolidated={consolidatedMetrics}
+          taskCount={tasks.length}
+          pendingCount={pendingTaskCount}
+        />
 
         {/* 5. Quick Actions */}
         <QuickActions />

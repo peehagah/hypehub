@@ -13,46 +13,76 @@ interface MetricCardItem {
   glow: string
 }
 
-const metrics: MetricCardItem[] = [
-  {
-    label: 'Audiência Total',
-    value: '284.7k',
-    delta: '+12.4%',
-    deltaPositive: true,
-    icon: <Users size={18} />,
-    color: '#ff6b6b',
-    glow: 'rgba(255,107,107,0.15)',
-  },
-  {
-    label: 'Usuários SaaS',
-    value: '1.847',
-    delta: '+8.2%',
-    deltaPositive: true,
-    icon: <TrendingUp size={18} />,
-    color: '#9b59ff',
-    glow: 'rgba(155,89,255,0.15)',
-  },
-  {
-    label: 'Tasks na Semana',
-    value: '34',
-    delta: '12 pendentes',
-    deltaPositive: false,
-    icon: <CheckSquare size={18} />,
-    color: '#ff4dca',
-    glow: 'rgba(255,77,202,0.15)',
-  },
-  {
-    label: 'Clientes Ativos',
-    value: '4',
-    delta: '+1 este mês',
-    deltaPositive: true,
-    icon: <Building2 size={18} />,
-    color: '#f59e0b',
-    glow: 'rgba(245,158,11,0.15)',
-  },
-]
+export interface ConsolidatedMetrics {
+  totalFollowers: number | null
+  followersGrowthWeekly: number | null  // percentage
+  totalPosts: number | null
+  activeClients: number
+}
 
-export function MetricsCards() {
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  return String(n)
+}
+
+function buildMetrics(consolidated?: ConsolidatedMetrics | null, taskCount = 0, pendingCount = 0): MetricCardItem[] {
+  const followers = consolidated?.totalFollowers
+  const growth = consolidated?.followersGrowthWeekly
+  const posts = consolidated?.totalPosts
+  const activeClients = consolidated?.activeClients ?? 0
+
+  return [
+    {
+      label: 'Audiência Total',
+      value: followers != null ? formatNumber(followers) : '—',
+      delta: growth != null
+        ? `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}% esta semana`
+        : 'Instagram',
+      deltaPositive: growth != null ? growth >= 0 : true,
+      icon: <Users size={18} />,
+      color: '#ff6b6b',
+      glow: 'rgba(255,107,107,0.15)',
+    },
+    {
+      label: 'Posts Instagram',
+      value: posts != null ? formatNumber(posts) : '—',
+      delta: 'total publicados',
+      deltaPositive: true,
+      icon: <TrendingUp size={18} />,
+      color: '#9b59ff',
+      glow: 'rgba(155,89,255,0.15)',
+    },
+    {
+      label: 'Tasks na Semana',
+      value: String(taskCount),
+      delta: `${pendingCount} pendentes`,
+      deltaPositive: pendingCount === 0,
+      icon: <CheckSquare size={18} />,
+      color: '#ff4dca',
+      glow: 'rgba(255,77,202,0.15)',
+    },
+    {
+      label: 'Clientes Ativos',
+      value: String(activeClients),
+      delta: 'workspaces ativos',
+      deltaPositive: true,
+      icon: <Building2 size={18} />,
+      color: '#f59e0b',
+      glow: 'rgba(245,158,11,0.15)',
+    },
+  ]
+}
+
+interface MetricsCardsProps {
+  consolidated?: ConsolidatedMetrics | null
+  taskCount?: number
+  pendingCount?: number
+}
+
+export function MetricsCards({ consolidated, taskCount = 0, pendingCount = 0 }: MetricsCardsProps) {
+  const metrics = buildMetrics(consolidated, taskCount, pendingCount)
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {metrics.map((m, i) => (
@@ -82,7 +112,7 @@ export function MetricsCards() {
               'flex items-center gap-1 mt-2 text-xs font-medium',
               m.deltaPositive ? 'text-green-400' : 'text-slate-500'
             )}>
-              {m.deltaPositive && <span>↑</span>}
+              {m.deltaPositive && m.delta.startsWith('+') && <span>↑</span>}
               <span>{m.delta}</span>
             </div>
           </div>

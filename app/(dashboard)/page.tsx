@@ -5,6 +5,7 @@ import {
   getAllAgents,
   getActivityLog,
   getDailySummary,
+  getConsolidatedInstagramMetrics,
 } from '@/lib/supabase'
 import { DashboardClient } from '@/components/dashboard-client'
 import type { Alert } from '@/lib/types'
@@ -14,12 +15,13 @@ export const revalidate = 0
 
 export default async function DashboardPage() {
   // Fetch all data in parallel
-  const [workspaces, tasks, agents, activity, dailySummary] = await Promise.all([
+  const [workspaces, tasks, agents, activity, dailySummary, instagramMetrics] = await Promise.all([
     getWorkspaces(),
     getAllTasks(),
     getAllAgents(),
     getActivityLog(30),
     getDailySummary(),
+    getConsolidatedInstagramMetrics(),
   ])
 
   // Build alerts from agent errors in activity log
@@ -38,6 +40,8 @@ export default async function DashboardPage() {
       }
     })
 
+  const pendingTasks = tasks.filter((t) => t.status === 'todo' || t.status === 'doing').length
+
   return (
     <DashboardClient
       workspaces={workspaces}
@@ -46,6 +50,13 @@ export default async function DashboardPage() {
       activity={activity}
       alerts={alerts}
       dailySummary={dailySummary}
+      consolidatedMetrics={{
+        totalFollowers: instagramMetrics.totalFollowers,
+        followersGrowthWeekly: instagramMetrics.followersGrowthWeekly,
+        totalPosts: instagramMetrics.totalPosts,
+        activeClients: workspaces.length,
+      }}
+      pendingTaskCount={pendingTasks}
     />
   )
 }
