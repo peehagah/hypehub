@@ -39,18 +39,18 @@ export async function GET(req: NextRequest) {
     const rows: Array<{
       workspace_id: string
       metric_name: string
-      metric_value: number
-      metric_unit: string | null
-      dimension: string
+      value: number
+      previous_value: number | null
+      source: string
       recorded_at: string
     }> = [
-      { workspace_id: workspaceId, metric_name: 'followers', metric_value: profile.followers, metric_unit: null, dimension: 'instagram', recorded_at: now },
-      { workspace_id: workspaceId, metric_name: 'following', metric_value: profile.following, metric_unit: null, dimension: 'instagram', recorded_at: now },
-      { workspace_id: workspaceId, metric_name: 'posts', metric_value: profile.posts, metric_unit: null, dimension: 'instagram', recorded_at: now },
+      { workspace_id: workspaceId, metric_name: 'instagram_followers', value: profile.followers, previous_value: null, source: 'apify', recorded_at: now },
+      { workspace_id: workspaceId, metric_name: 'instagram_following', value: profile.following, previous_value: null, source: 'apify', recorded_at: now },
+      { workspace_id: workspaceId, metric_name: 'instagram_posts', value: profile.posts, previous_value: null, source: 'apify', recorded_at: now },
     ]
 
     if (profile.engagement_rate !== null) {
-      rows.push({ workspace_id: workspaceId, metric_name: 'engagement_rate', metric_value: profile.engagement_rate, metric_unit: '%', dimension: 'instagram', recorded_at: now })
+      rows.push({ workspace_id: workspaceId, metric_name: 'instagram_engagement_rate', value: profile.engagement_rate, previous_value: null, source: 'apify', recorded_at: now })
     }
 
     const { error } = await sb.from('metrics').insert(rows)
