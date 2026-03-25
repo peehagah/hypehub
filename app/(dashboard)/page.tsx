@@ -58,7 +58,6 @@ export default async function DashboardPage() {
       dailySummary={dailySummary}
       workspaceOptions={workspaceOptions}
       metricsMap={metricsMap}
-      pendingTaskCount={pendingTasks}
     />
   )
 }

@@ -25,7 +25,6 @@ interface DashboardClientProps {
   dailySummary: DailySummary | null
   workspaceOptions: WorkspaceOption[]
   metricsMap: Record<string, WorkspaceDashboardMetrics>
-  pendingTaskCount?: number
 }
 
 export function DashboardClient({
@@ -37,7 +36,6 @@ export function DashboardClient({
   dailySummary,
   workspaceOptions,
   metricsMap,
-  pendingTaskCount = 0,
 }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Clientes')
   const [cmdOpen, setCmdOpen] = useState(false)
