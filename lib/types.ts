@@ -26,6 +26,7 @@ export interface Workspace {
   updated_at: string
   // Legacy optional fields for backward compat with mock data and components
   status?: WorkspaceStatus
+  is_standby?: boolean              // visual standby mode (e.g. Ecomfisc paused)
   owner_id?: string | null
   whatsapp_number?: string | null
   whatsapp_active?: boolean
@@ -238,6 +239,15 @@ export interface Database {
       activity_log: { Row: ActivityLogEntry; Insert: Omit<ActivityLogEntry, 'id' | 'created_at'>; Update: Partial<ActivityLogEntry> }
     }
   }
+}
+
+// ---- Dashboard Metrics (per-workspace computed summary) -------
+export interface WorkspaceDashboardMetrics {
+  followers: number | null
+  posts: number | null
+  engagement_rate: number | null      // latest snapshot
+  weekly_engagement: number | null    // avg of last 7 days
+  weekly_growth: number | null        // followers_latest - followers_7d_ago
 }
 
 // ---- UI / Dashboard types -------------------------------------

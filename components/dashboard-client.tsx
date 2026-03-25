@@ -5,13 +5,13 @@ import { AlertBanner } from '@/components/alert-banner'
 import { DailySummaryCard } from '@/components/daily-summary'
 import { QuickCommandBar, QuickCommandModal } from '@/components/quick-command'
 import { MetricsCards } from '@/components/metrics-cards'
-import type { ConsolidatedMetrics } from '@/components/metrics-cards'
+import type { WorkspaceOption } from '@/components/metrics-cards'
 import { QuickActions } from '@/components/quick-actions'
 import { WorkspaceCard, ProspectCard } from '@/components/workspace-card'
 import { AgentHealth } from '@/components/agent-health'
 import { KanbanBoard } from '@/components/kanban-board'
 import { ActivityFeed } from '@/components/activity-feed'
-import type { Workspace, Task, Agent, ActivityLogEntry, Alert, DailySummary } from '@/lib/types'
+import type { Workspace, Task, Agent, ActivityLogEntry, Alert, DailySummary, WorkspaceDashboardMetrics } from '@/lib/types'
 
 const TABS = ['Clientes', 'Tasks', 'Atividade'] as const
 type Tab = (typeof TABS)[number]
@@ -23,7 +23,8 @@ interface DashboardClientProps {
   activity: ActivityLogEntry[]
   alerts: Alert[]
   dailySummary: DailySummary | null
-  consolidatedMetrics?: ConsolidatedMetrics | null
+  workspaceOptions: WorkspaceOption[]
+  metricsMap: Record<string, WorkspaceDashboardMetrics>
   pendingTaskCount?: number
 }
 
@@ -34,7 +35,8 @@ export function DashboardClient({
   activity,
   alerts,
   dailySummary,
-  consolidatedMetrics,
+  workspaceOptions,
+  metricsMap,
   pendingTaskCount = 0,
 }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Clientes')
@@ -83,12 +85,8 @@ export function DashboardClient({
         {/* 3. Quick Command Bar */}
         <QuickCommandBar onOpen={() => setCmdOpen(true)} />
 
-        {/* 4. Metrics Cards */}
-        <MetricsCards
-          consolidated={consolidatedMetrics}
-          taskCount={tasks.length}
-          pendingCount={pendingTaskCount}
-        />
+        {/* 4. Metrics Cards with workspace selector */}
+        <MetricsCards workspaces={workspaceOptions} metricsMap={metricsMap} />
 
         {/* 5. Quick Actions */}
         <QuickActions />
@@ -123,15 +121,16 @@ export function DashboardClient({
               ) : (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {workspaces.map((ws) => {
-                    const taskCount = tasks.filter((t) => t.workspace_id === ws.id).length
-                    const agentCount = agents.filter((a) => a.workspace_id === ws.id).length
+                    const wsMetrics = metricsMap[ws.id] ?? null
                     return (
                       <WorkspaceCard
                         key={ws.id}
                         workspace={ws}
-                        taskCount={taskCount}
-                        agentCount={agentCount}
-                        audience="—"
+                        metrics={wsMetrics ? {
+                          followers: wsMetrics.followers,
+                          engagement_rate: wsMetrics.engagement_rate,
+                          posts: wsMetrics.posts,
+                        } : null}
                       />
                     )
                   })}

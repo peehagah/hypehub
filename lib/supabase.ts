@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Workspace, Agent, Task, Metric, ActivityLogEntry, DailySummary } from './types'
+import type { Workspace, Agent, Task, Metric, ActivityLogEntry, DailySummary, WorkspaceDashboardMetrics } from './types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -127,6 +127,71 @@ export async function getAllAgents(): Promise<Agent[]> {
     .order('workspace_id', { ascending: true })
   if (error) console.error('[getAllAgents]', error.message)
   return (data as Agent[]) ?? []
+}
+
+// Returns per-workspace metrics for the dashboard (latest snapshot + 7-day computed values)
+export async function getMetricsForDashboard(): Promise<Record<string, WorkspaceDashboardMetrics>> {
+  const sb = createServerClient()
+  const { data, error } = await sb
+    .from('metrics')
+    .select('workspace_id, metric_name, value, recorded_at')
+    .in('metric_name', ['instagram_followers', 'instagram_engagement_rate', 'instagram_posts'])
+    .order('recorded_at', { ascending: false })
+    .limit(500)
+
+  if (error || !data) {
+    console.error('[getMetricsForDashboard]', error?.message)
+    return {}
+  }
+
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const sevenDaysAgoISO = sevenDaysAgo.toISOString()
+
+  // Group rows by workspace
+  const byWorkspace = new Map<string, Array<{ metric_name: string; value: number; recorded_at: string }>>()
+  for (const row of data as Array<{ workspace_id: string; metric_name: string; value: number; recorded_at: string }>) {
+    const arr = byWorkspace.get(row.workspace_id) ?? []
+    arr.push(row)
+    byWorkspace.set(row.workspace_id, arr)
+  }
+
+  const result: Record<string, WorkspaceDashboardMetrics> = {}
+
+  for (const [workspaceId, rows] of byWorkspace) {
+    // Latest value per metric (rows are DESC by recorded_at)
+    const latestFollowers = rows.find((r) => r.metric_name === 'instagram_followers')?.value ?? null
+    const latestPosts = rows.find((r) => r.metric_name === 'instagram_posts')?.value ?? null
+    const latestEngagement = rows.find((r) => r.metric_name === 'instagram_engagement_rate')?.value ?? null
+
+    // 7-day avg engagement
+    const recentEngagements = rows
+      .filter((r) => r.metric_name === 'instagram_engagement_rate' && r.recorded_at >= sevenDaysAgoISO)
+      .map((r) => r.value)
+    const weeklyEngagement =
+      recentEngagements.length > 0
+        ? recentEngagements.reduce((a, b) => a + b, 0) / recentEngagements.length
+        : latestEngagement
+
+    // Weekly growth: latest followers - oldest followers reading within last 7 days
+    const recentFollowerRows = rows
+      .filter((r) => r.metric_name === 'instagram_followers' && r.recorded_at >= sevenDaysAgoISO)
+    let weeklyGrowth: number | null = null
+    if (recentFollowerRows.length >= 2 && latestFollowers !== null) {
+      const oldest = recentFollowerRows[recentFollowerRows.length - 1].value
+      weeklyGrowth = latestFollowers - oldest
+    }
+
+    result[workspaceId] = {
+      followers: latestFollowers,
+      posts: latestPosts,
+      engagement_rate: latestEngagement,
+      weekly_engagement: weeklyEngagement,
+      weekly_growth: weeklyGrowth,
+    }
+  }
+
+  return result
 }
 
 // Returns the most recent Instagram metrics across all workspaces (for the dashboard home)
