@@ -61,11 +61,11 @@ function formatNumber(n: number): string {
 }
 
 // Extract the latest value for a specific metric from the metrics array
-function getLatestMetric(metrics: Metric[], name: string, dim = 'instagram'): number | null {
+function getLatestMetric(metrics: Metric[], name: string): number | null {
   const found = metrics
-    .filter((m) => m.metric_name === name && m.dimension === dim)
+    .filter((m) => m.metric_name === name)
     .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())[0]
-  return found ? found.metric_value : null
+  return found ? found.value : null
 }
 
 function StatCard({
@@ -134,10 +134,10 @@ function InstagramMetricsPanel({
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
 
-  const followers = getLatestMetric(metrics, 'followers')
-  const following = getLatestMetric(metrics, 'following')
-  const posts = getLatestMetric(metrics, 'posts')
-  const engagementRate = getLatestMetric(metrics, 'engagement_rate')
+  const followers = getLatestMetric(metrics, 'instagram_followers')
+  const following = getLatestMetric(metrics, 'instagram_following')
+  const posts = getLatestMetric(metrics, 'instagram_posts')
+  const engagementRate = getLatestMetric(metrics, 'instagram_engagement_rate')
 
   const hasData = followers !== null
 

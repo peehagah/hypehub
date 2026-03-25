@@ -125,11 +125,10 @@ export interface Metric {
   id: string
   workspace_id: string
   metric_name: string
-  metric_value: number
-  metric_unit: string | null
-  dimension: string | null   // e.g. 'instagram', 'tiktok', 'total'
+  value: number
+  previous_value: number | null
+  source: string
   recorded_at: string
-  created_at: string
 }
 
 // ---- Competitors -----------------------------------------------

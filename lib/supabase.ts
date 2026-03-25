@@ -138,9 +138,8 @@ export async function getConsolidatedInstagramMetrics(): Promise<{
   const sb = createServerClient()
   const { data, error } = await sb
     .from('metrics')
-    .select('workspace_id, metric_name, metric_value, recorded_at')
-    .eq('dimension', 'instagram')
-    .in('metric_name', ['followers', 'engagement_rate', 'posts'])
+    .select('workspace_id, metric_name, value, recorded_at')
+    .in('metric_name', ['instagram_followers', 'instagram_engagement_rate', 'instagram_posts'])
     .order('recorded_at', { ascending: false })
     .limit(200)
 
@@ -151,11 +150,11 @@ export async function getConsolidatedInstagramMetrics(): Promise<{
 
   // For each workspace, take the most recent value of each metric
   const latestByWorkspaceAndMetric = new Map<string, { value: number; at: string }>()
-  for (const row of data as Array<{ workspace_id: string; metric_name: string; metric_value: number; recorded_at: string }>) {
+  for (const row of data as Array<{ workspace_id: string; metric_name: string; value: number; recorded_at: string }>) {
     const key = `${row.workspace_id}::${row.metric_name}`
     const existing = latestByWorkspaceAndMetric.get(key)
     if (!existing || row.recorded_at > existing.at) {
-      latestByWorkspaceAndMetric.set(key, { value: row.metric_value, at: row.recorded_at })
+      latestByWorkspaceAndMetric.set(key, { value: row.value, at: row.recorded_at })
     }
   }
 
@@ -166,12 +165,12 @@ export async function getConsolidatedInstagramMetrics(): Promise<{
 
   for (const [key, { value }] of Array.from(latestByWorkspaceAndMetric.entries())) {
     const metricName = key.split('::')[1]
-    if (metricName === 'followers') {
+    if (metricName === 'instagram_followers') {
       totalFollowers = (totalFollowers ?? 0) + value
-    } else if (metricName === 'engagement_rate') {
+    } else if (metricName === 'instagram_engagement_rate') {
       avgEngagementRate = (avgEngagementRate ?? 0) + value
       engagementCount++
-    } else if (metricName === 'posts') {
+    } else if (metricName === 'instagram_posts') {
       totalPosts = (totalPosts ?? 0) + value
     }
   }
