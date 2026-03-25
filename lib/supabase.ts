@@ -158,7 +158,7 @@ export async function getMetricsForDashboard(): Promise<Record<string, Workspace
 
   const result: Record<string, WorkspaceDashboardMetrics> = {}
 
-  for (const [workspaceId, rows] of byWorkspace) {
+  for (const [workspaceId, rows] of Array.from(byWorkspace.entries())) {
     // Latest value per metric (rows are DESC by recorded_at)
     const latestFollowers = rows.find((r) => r.metric_name === 'instagram_followers')?.value ?? null
     const latestPosts = rows.find((r) => r.metric_name === 'instagram_posts')?.value ?? null
