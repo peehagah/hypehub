@@ -40,8 +40,6 @@ export default async function DashboardPage() {
       }
     })
 
-  const pendingTasks = tasks.filter((t) => t.status === 'todo' || t.status === 'doing').length
-
   // Build workspace options for the primary profile selector
   // Only include workspaces that are not in standby/paused
   const workspaceOptions = workspaces
