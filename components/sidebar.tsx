@@ -12,6 +12,8 @@ import {
   MessageSquare,
   Settings,
   LogOut,
+  Menu,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Workspace } from '@/lib/types'
@@ -28,27 +30,13 @@ const NAV_ITEMS = [
 
 export function Sidebar({ workspaces = [] }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
 
-  return (
-    <aside
-      className={cn(
-        'relative flex flex-col h-screen transition-all duration-300 ease-in-out border-r border-[#2a2d3e] flex-shrink-0',
-        collapsed ? 'w-16' : 'w-60'
-      )}
-      style={{ background: '#161822' }}
-    >
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-[#2a2d3e] border border-[#3a3d4e] flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#3a3d4e] transition-colors"
-      >
-        {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-      </button>
-
+  const navContent = (
+    <>
       {/* Logo */}
       <div className={cn('flex items-center gap-3 px-4 py-5 border-b border-[#2a2d3e]', collapsed && 'justify-center px-0')}>
-        {/* H logo */}
         <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-lg shadow-pink-500/20">
           <span className="text-white font-bold text-lg leading-none">H</span>
         </div>
@@ -68,6 +56,7 @@ export function Sidebar({ workspaces = [] }: SidebarProps) {
             <Link
               key={href}
               href={href}
+              onClick={() => setMobileOpen(false)}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
                 active
@@ -97,6 +86,7 @@ export function Sidebar({ workspaces = [] }: SidebarProps) {
           <Link
             key={ws.id}
             href={`/workspace/${ws.slug}`}
+            onClick={() => setMobileOpen(false)}
             className={cn(
               'flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 group',
               pathname === `/workspace/${ws.slug}`
@@ -145,6 +135,7 @@ export function Sidebar({ workspaces = [] }: SidebarProps) {
       <div className="border-t border-[#2a2d3e] p-3 space-y-1">
         <Link
           href="/settings"
+          onClick={() => setMobileOpen(false)}
           className={cn(
             'flex items-center gap-3 px-3 py-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors text-sm',
             collapsed && 'justify-center px-0'
@@ -168,6 +159,64 @@ export function Sidebar({ workspaces = [] }: SidebarProps) {
           {!collapsed && <LogOut size={14} className="text-slate-600 hover:text-red-400 transition-colors flex-shrink-0" />}
         </div>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* ── Mobile hamburger button (fixed, always visible on mobile) ── */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="fixed top-3 left-3 z-50 md:hidden w-10 h-10 rounded-xl bg-[#161822] border border-[#2a2d3e] flex items-center justify-center text-slate-400 hover:text-white transition-colors shadow-lg"
+        aria-label="Abrir menu"
+      >
+        <Menu size={18} />
+      </button>
+
+      {/* ── Mobile backdrop ── */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* ── Desktop sidebar ── */}
+      <aside
+        className={cn(
+          'relative hidden md:flex flex-col h-screen transition-all duration-300 ease-in-out border-r border-[#2a2d3e] flex-shrink-0',
+          collapsed ? 'w-16' : 'w-60'
+        )}
+        style={{ background: '#161822' }}
+      >
+        {/* Collapse toggle - desktop */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-[#2a2d3e] border border-[#3a3d4e] flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#3a3d4e] transition-colors"
+        >
+          {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+        </button>
+        {navContent}
+      </aside>
+
+      {/* ── Mobile drawer ── */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex flex-col w-72 transition-transform duration-300 ease-in-out border-r border-[#2a2d3e] md:hidden',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+        style={{ background: '#161822' }}
+      >
+        {/* Close button */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-lg bg-[#2a2d3e] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+          aria-label="Fechar menu"
+        >
+          <X size={14} />
+        </button>
+        {navContent}
+      </aside>
+    </>
   )
 }

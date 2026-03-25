@@ -62,10 +62,10 @@ export function DashboardClient({
       {/* 1. Alert Banner */}
       <AlertBanner alerts={alerts} />
 
-      <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
+      <div className="p-4 md:p-6 space-y-6 max-w-[1400px] mx-auto">
         {/* Page header */}
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-white">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-0.5">
             Visão consolidada de todos os clientes ·{' '}
             {new Intl.DateTimeFormat('pt-BR', {
@@ -92,20 +92,22 @@ export function DashboardClient({
         {/* 6. Tabs */}
         <div>
           {/* Tab nav */}
-          <div className="flex items-center gap-1 border-b border-[#2a2d3e] mb-6">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px ${
-                  activeTab === tab
-                    ? 'border-coral text-white'
-                    : 'border-transparent text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
+            <div className="flex items-center gap-1 border-b border-[#2a2d3e] mb-6 min-w-max md:min-w-0">
+              {TABS.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px whitespace-nowrap min-h-[44px] ${
+                    activeTab === tab
+                      ? 'border-coral text-white'
+                      : 'border-transparent text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Tab: Clientes */}
@@ -117,8 +119,14 @@ export function DashboardClient({
                   <p className="text-sm">Adicione clientes para começar</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {workspaces.map((ws) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {[...workspaces]
+                    .sort((a, b) => {
+                      const aS = a.is_standby === true || a.status === 'paused' ? 1 : 0
+                      const bS = b.is_standby === true || b.status === 'paused' ? 1 : 0
+                      return aS - bS
+                    })
+                    .map((ws) => {
                     const wsMetrics = metricsMap[ws.id] ?? null
                     return (
                       <WorkspaceCard

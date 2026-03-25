@@ -12,7 +12,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#0f1117' }}>
       <Sidebar workspaces={workspaces} />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pt-16 md:pt-0">
         {children}
       </main>
     </div>

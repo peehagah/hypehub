@@ -327,10 +327,28 @@ export function ChatInterface({ agents }: ChatInterfaceProps) {
   // ---- Render ------------------------------------------------------
 
   return (
-    <div className="flex h-[calc(100vh-280px)] min-h-[560px] rounded-xl border border-[#2a2d3e] overflow-hidden">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-280px)] min-h-[560px] rounded-xl border border-[#2a2d3e] overflow-hidden">
 
-      {/* ── Left panel ──────────────────────────────────────────── */}
-      <div className="w-64 flex-shrink-0 border-r border-[#2a2d3e] bg-[#161822] flex flex-col">
+      {/* ── Mobile: agent dropdown ───────────────────────────────── */}
+      <div className="md:hidden flex-shrink-0 border-b border-[#2a2d3e] bg-[#161822] p-3">
+        <select
+          value={selectedAgent?.id ?? ''}
+          onChange={(e) => {
+            const agent = agents.find((a) => a.id === e.target.value)
+            if (agent) setSelectedAgent(agent)
+          }}
+          className="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2.5 text-sm text-white min-h-[44px] focus:outline-none focus:border-[#ff6b6b80]"
+        >
+          {agents.map((agent) => (
+            <option key={agent.id} value={agent.id}>
+              {agent.name} — {agentLabel(agent)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* ── Left panel (desktop only) ───────────────────────────── */}
+      <div className="hidden md:flex w-64 flex-shrink-0 border-r border-[#2a2d3e] bg-[#161822] flex-col">
 
         {/* Agents section */}
         <div className="border-b border-[#2a2d3e]">
@@ -427,7 +445,7 @@ export function ChatInterface({ agents }: ChatInterfaceProps) {
       </div>
 
       {/* ── Right panel: Chat ───────────────────────────────────── */}
-      <div className="flex-1 flex flex-col bg-[#0f1117] min-w-0">
+      <div className="flex-1 flex flex-col bg-[#0f1117] min-w-0 min-h-0">
 
         {/* Chat header */}
         {selectedAgent && (

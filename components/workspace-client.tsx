@@ -265,11 +265,11 @@ export function WorkspaceClient({
   ).length
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
+    <div className="p-4 md:p-6 space-y-6 max-w-[1400px] mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold shadow-lg flex-shrink-0"
+          className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center text-base md:text-lg font-bold shadow-lg flex-shrink-0"
           style={{
             background: `${workspace.color}20`,
             color: workspace.color,
@@ -279,7 +279,7 @@ export function WorkspaceClient({
           {workspace.name.slice(0, 2).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-white">{workspace.name}</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-white">{workspace.name}</h1>
           <p className="text-slate-500 text-sm mt-0.5">
             {(workspace.industry ?? workspace.niche) && <span>{workspace.industry ?? workspace.niche} · </span>}
             {workspace.description}
@@ -304,24 +304,26 @@ export function WorkspaceClient({
 
       {/* Tabs */}
       <div>
-        <div className="flex items-center gap-1 border-b border-[#2a2d3e] mb-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px flex items-center gap-2 ${
-                activeTab === tab
-                  ? 'border-coral text-white'
-                  : 'border-transparent text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {tab === 'Visão Geral' && <LayoutDashboard size={14} />}
-              {tab === 'Chat com Agentes' && <MessageSquare size={14} />}
-              {tab === 'Tasks' && <CheckSquare size={14} />}
-              {tab === 'Relatórios' && <BarChart3 size={14} />}
-              {tab}
-            </button>
-          ))}
+        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+          <div className="flex items-center gap-1 border-b border-[#2a2d3e] mb-6 min-w-max md:min-w-0">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 md:px-4 py-2.5 text-sm font-medium transition-all duration-150 border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap min-h-[44px] ${
+                  activeTab === tab
+                    ? 'border-coral text-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {tab === 'Visão Geral' && <LayoutDashboard size={14} />}
+                {tab === 'Chat com Agentes' && <MessageSquare size={14} />}
+                {tab === 'Tasks' && <CheckSquare size={14} />}
+                {tab === 'Relatórios' && <BarChart3 size={14} />}
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Tab: Visão Geral */}

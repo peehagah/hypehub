@@ -42,9 +42,18 @@ export default async function DashboardPage() {
 
   // Build workspace options for the primary profile selector
   // Only include workspaces that are not in standby/paused
+  const isStandby = (ws: { is_standby?: boolean; status?: string }) =>
+    ws.is_standby === true || ws.status === 'paused'
+
   const workspaceOptions = workspaces
-    .filter((ws) => ws.is_standby !== true && ws.status !== 'paused')
+    .filter((ws) => !isStandby(ws))
     .map((ws) => ({ id: ws.id, name: ws.name }))
+
+  // Filter standby workspaces out of the metrics map so they don't count in totals
+  const standbyIds = new Set(workspaces.filter(isStandby).map((ws) => ws.id))
+  const filteredMetricsMap = Object.fromEntries(
+    Object.entries(metricsMap).filter(([id]) => !standbyIds.has(id))
+  )
 
   return (
     <DashboardClient
@@ -55,7 +64,7 @@ export default async function DashboardPage() {
       alerts={alerts}
       dailySummary={dailySummary}
       workspaceOptions={workspaceOptions}
-      metricsMap={metricsMap}
+      metricsMap={filteredMetricsMap}
     />
   )
 }

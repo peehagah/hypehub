@@ -91,3 +91,19 @@ body {
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
 }
+
+/* Hide scrollbars while keeping scroll functionality */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile base font size */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+}

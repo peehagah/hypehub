@@ -79,15 +79,15 @@ export function MetricsCards({ workspaces, metricsMap }: MetricsCardsProps) {
     <div className="space-y-3">
       {/* Workspace selector */}
       {workspaces.length > 0 && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 font-medium">Perfil primário:</span>
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#1a1d2e] border border-[#2a2d3e]">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <span className="text-xs text-slate-500 font-medium flex-shrink-0">Perfil primário:</span>
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#1a1d2e] border border-[#2a2d3e] overflow-x-auto scrollbar-none">
             {workspaces.map((ws) => (
               <button
                 key={ws.id}
                 onClick={() => setSelectedId(ws.id)}
                 className={cn(
-                  'px-3 py-1 rounded-md text-xs font-medium transition-all duration-150',
+                  'px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 whitespace-nowrap flex-shrink-0 min-h-[36px]',
                   selectedId === ws.id
                     ? 'bg-[#2a2d3e] text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-300'

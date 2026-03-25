@@ -58,12 +58,12 @@ export function QuickActions() {
   return (
     <div>
       <p className="text-xs font-semibold text-slate-600 uppercase tracking-widest mb-3">Atalhos Rápidos</p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:pb-0 scrollbar-none">
         {actions.map((action) => (
           <button
             key={action.id}
             onClick={action.onClick}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[#2a2d3e] bg-[#1a1d2e] transition-all duration-150 hover:border-[#3a3d4e] hover:scale-[1.02] group text-sm font-medium text-slate-300 hover:text-white"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[#2a2d3e] bg-[#1a1d2e] transition-all duration-150 hover:border-[#3a3d4e] hover:scale-[1.02] group text-sm font-medium text-slate-300 hover:text-white flex-shrink-0 min-h-[44px]"
             style={{
               boxShadow: 'none',
             }}
