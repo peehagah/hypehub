@@ -130,14 +130,31 @@ export async function getAllAgents(): Promise<Agent[]> {
 }
 
 // Returns per-workspace metrics for the dashboard (latest snapshot + 7-day computed values)
+// Excludes workspaces with is_standby = true so they don't count in consolidated totals.
 export async function getMetricsForDashboard(): Promise<Record<string, WorkspaceDashboardMetrics>> {
   const sb = createServerClient()
-  const { data, error } = await sb
+
+  // First fetch active (non-standby) workspace IDs
+  const { data: activeWorkspaces } = await sb
+    .from('workspaces')
+    .select('id')
+    .eq('is_prospect', false)
+    .neq('is_standby', true)
+  const activeIds = (activeWorkspaces ?? []).map((w: { id: string }) => w.id)
+
+  // Build metric query — filter to active workspaces only (if we have the IDs)
+  let query = sb
     .from('metrics')
     .select('workspace_id, metric_name, value, recorded_at')
     .in('metric_name', ['instagram_followers', 'instagram_engagement_rate', 'instagram_posts'])
     .order('recorded_at', { ascending: false })
     .limit(500)
+
+  if (activeIds.length > 0) {
+    query = query.in('workspace_id', activeIds)
+  }
+
+  const { data, error } = await query
 
   if (error || !data) {
     console.error('[getMetricsForDashboard]', error?.message)

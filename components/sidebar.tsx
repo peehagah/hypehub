@@ -82,44 +82,60 @@ export function Sidebar({ workspaces = [] }: SidebarProps) {
         )}
         {collapsed && <div className="py-2 border-t border-[#2a2d3e] mx-2" />}
 
-        {workspaces.map((ws) => (
-          <Link
-            key={ws.id}
-            href={`/workspace/${ws.slug}`}
-            onClick={() => setMobileOpen(false)}
-            className={cn(
-              'flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 group',
-              pathname === `/workspace/${ws.slug}`
-                ? 'bg-white/5 text-white'
-                : 'text-slate-500 hover:text-slate-200 hover:bg-white/5',
-              collapsed && 'justify-center px-0'
-            )}
-            title={collapsed ? ws.name : undefined}
-          >
-            {/* Color dot */}
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-              style={{ background: `${ws.color}25`, color: ws.color }}
-            >
-              {ws.name.slice(0, 2).toUpperCase()}
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium truncate">{ws.name}</p>
-                <div className="flex items-center gap-1">
-                  <div
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: !ws.is_prospect ? '#22c55e' : '#6b7280' }}
-                  />
-                  <span className="text-[10px] text-slate-600 capitalize">{ws.status ?? (!ws.is_prospect ? 'active' : 'prospect')}</span>
+        {[...workspaces]
+          .sort((a, b) => {
+            const aS = a.is_standby === true || a.status === 'paused' ? 1 : 0
+            const bS = b.is_standby === true || b.status === 'paused' ? 1 : 0
+            return aS - bS
+          })
+          .map((ws) => {
+            const isStandby = ws.is_standby === true || ws.status === 'paused'
+            return (
+              <Link
+                key={ws.id}
+                href={`/workspace/${ws.slug}`}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  'flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 group',
+                  pathname === `/workspace/${ws.slug}`
+                    ? 'bg-white/5 text-white'
+                    : 'text-slate-500 hover:text-slate-200 hover:bg-white/5',
+                  collapsed && 'justify-center px-0',
+                  isStandby && 'opacity-40'
+                )}
+                title={collapsed ? ws.name : undefined}
+              >
+                {/* Color dot / initials */}
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                  style={
+                    isStandby
+                      ? { background: '#2a2d3e', color: '#4a4d5e' }
+                      : { background: `${ws.color}25`, color: ws.color }
+                  }
+                >
+                  {ws.name.slice(0, 2).toUpperCase()}
                 </div>
-              </div>
-            )}
-            {!collapsed && ws.whatsapp_active && (
-              <MessageSquare size={12} className="text-green-500 flex-shrink-0" />
-            )}
-          </Link>
-        ))}
+                {!collapsed && (
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate">{ws.name}</p>
+                    <div className="flex items-center gap-1">
+                      <div
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: isStandby ? '#4a4d5e' : (!ws.is_prospect ? '#22c55e' : '#6b7280') }}
+                      />
+                      <span className="text-[10px] text-slate-600 capitalize">
+                        {isStandby ? 'Standby' : (ws.status ?? (!ws.is_prospect ? 'active' : 'prospect'))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {!collapsed && ws.whatsapp_active && !isStandby && (
+                  <MessageSquare size={12} className="text-green-500 flex-shrink-0" />
+                )}
+              </Link>
+            )
+          })}
       </nav>
 
       {/* WhatsApp indicator */}

@@ -264,8 +264,22 @@ export function WorkspaceClient({
     (t) => new Date(t.updated_at) >= oneWeekAgo
   ).length
 
+  const isStandby = workspace.is_standby === true || workspace.status === 'paused'
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1400px] mx-auto">
+
+      {/* Standby banner */}
+      {isStandby && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-700/50 bg-slate-800/40 text-slate-400 text-sm">
+          <div className="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0" />
+          <span>
+            <span className="font-semibold text-slate-300">Standby</span>
+            {' '}— este cliente está pausado. Métricas e agentes não estão ativos.
+          </span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-center gap-4">
         <div
